@@ -15,42 +15,148 @@ Initializes a production-ready React project with full tooling setup following p
 
 ## Prerequisites
 
-- Node.js >= 18.x
-- Package manager: `npm` / `yarn` / `pnpm`
-- Project name in `kebab-case` (e.g. `my-app`)
+- Package manager: `yarn` (preferred)
+- `.github/` folder with skills, instructions, and copilot config ready
 - Git repository initialized (`git init`)
 
 ## Step-by-Step Workflows
 
-### Step 1: Bootstrap Vite + React + TypeScript
+### Step 1: Verify Node.js version
+
+> ⚠️ This project requires **Node.js >= 18.x**.
+> Check current version before proceeding.
 
 ```bash
-npm create vite@latest <project-name> -- --template react-ts
-cd <project-name>
-npm install
+node -v
 ```
 
-### Step 2: Install core dependencies
+**If version is lower than 18.x — check for NVM first:**
+
+```bash
+# Check if nvm is available
+command -v nvm
+```
+
+**If NVM is available → use it:**
+
+```bash
+# Install and use Node 18 LTS
+nvm install 18
+nvm use 18
+
+# Optional: set as default for all future sessions
+nvm alias default 18
+
+# Verify
+node -v  # should print v18.x.x or higher
+```
+
+**If NVM is NOT available → install Node.js directly:**
+
+```bash
+# macOS (Homebrew)
+brew install node@18
+brew link node@18 --force
+
+# Ubuntu/Debian
+curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+sudo apt-get install -y nodejs
+
+# Windows (winget)
+winget install OpenJS.NodeJS.LTS
+
+# Verify after install
+node -v
+```
+
+> 💡 Recommend installing NVM for easier Node version management in the future:
+> https://github.com/nvm-sh/nvm
+
+---
+
+### Step 2: Verify Yarn is available
+
+```bash
+# Check if yarn is installed
+yarn -v
+```
+
+**If yarn is NOT available → install it:**
+
+```bash
+npm install -g yarn
+
+# Verify
+yarn -v
+```
+
+---
+
+### Step 3: Prepare project folder — preserve .github
+
+> ⚠️ Never run `yarn create vite <project-name>` directly — it creates a new folder
+> and will NOT carry over the `.github/` configuration.
+> Always scaffold INTO the current folder using `.` as the target.
+
+```bash
+# Step 3a: Create and enter the project folder
+mkdir <project-name>
+cd <project-name>
+
+# Step 3b: Copy .github from the template/source into this folder FIRST
+# (skip if .github is already present)
+cp -r /path/to/template/.github ./.github
+
+# Step 3c: Init git
+git init
+
+# Step 3d: Scaffold Vite INTO current folder (dot = current dir)
+yarn create vite . --template react-ts
+
+# Step 3e: Install dependencies
+yarn install
+```
+
+> ✅ After this step, your folder should look like:
+>
+> ```
+> <project-name>/
+>   .github/              ← preserved ✅
+>     AGENTS.md
+>     copilot-instructions.md
+>     skills/
+>   src/
+>   index.html
+>   package.json
+>   vite.config.ts
+>   ...
+> ```
+
+---
+
+### Step 4: Install core dependencies
 
 ```bash
 # Data fetching & validation
-npm install swr axios zod
+yarn add swr axios zod
 
 # State management
-npm install zustand
+yarn add zustand
 
 # Routing
-npm install react-router-dom
+yarn add react-router-dom
 
 # Styling
-npm install -D tailwindcss postcss autoprefixer
+yarn add -D tailwindcss postcss autoprefixer
 npx tailwindcss init -p
 ```
 
-### Step 3: Install dev tooling
+---
+
+### Step 5: Install dev tooling
 
 ```bash
-npm install -D \
+yarn add -D \
   eslint \
   @typescript-eslint/eslint-plugin \
   @typescript-eslint/parser \
@@ -63,10 +169,12 @@ npm install -D \
   lint-staged
 ```
 
-### Step 4: Install testing tools
+---
+
+### Step 6: Install testing tools
 
 ```bash
-npm install -D \
+yarn add -D \
   jest \
   @testing-library/react \
   @testing-library/jest-dom \
@@ -76,7 +184,9 @@ npm install -D \
   ts-jest
 ```
 
-### Step 5: Setup folder structure
+---
+
+### Step 7: Setup folder structure
 
 ```
 src/
@@ -93,16 +203,18 @@ src/
   types/
   api/
     core/
-      ApiService.ts       ← base class: generic REST methods + interceptors
+      ApiService.ts
     types/
-      api.types.ts        ← shared API types (ApiResponse, ApiServiceOptions...)
-    index.ts              ← export ApiService + fetcher
+      api.types.ts
+    index.ts
   assets/
   App.tsx
   main.tsx
 ```
 
-### Step 6: Configure path aliases
+---
+
+### Step 8: Configure path aliases
 
 Update `vite.config.ts`:
 
@@ -137,7 +249,9 @@ Update `tsconfig.json`:
 }
 ```
 
-### Step 7: Setup API types
+---
+
+### Step 9: Setup API types
 
 Generate `src/api/types/api.types.ts`:
 
@@ -180,7 +294,9 @@ export interface ApiServiceOptions {
 }
 ```
 
-### Step 8: Setup ApiService class
+---
+
+### Step 10: Setup ApiService class
 
 Generate `src/api/core/ApiService.ts`:
 
@@ -347,7 +463,9 @@ export class ApiService {
 }
 ```
 
-### Step 9: Export ApiService + fetcher
+---
+
+### Step 11: Export ApiService + fetcher
 
 Generate `src/api/index.ts`:
 
@@ -367,27 +485,9 @@ const apiService = new ApiService(import.meta.env.VITE_API_BASE_URL);
 export const fetcher = <T>(url: string): Promise<T> => apiService.get<T>(url);
 ```
 
-Usage per feature:
+---
 
-```ts
-// src/features/user/api/user-api.ts
-import { ApiService } from "src/api";
-import type { User, CreateUserDto } from "../types";
-
-const service = new ApiService(import.meta.env.VITE_API_BASE_URL);
-
-export const userApi = {
-  getById: (id: string) => service.get<User>(`/users/${id}`),
-  getAll: () => service.get<User[]>("/users"),
-  create: (dto: CreateUserDto) =>
-    service.post<User, CreateUserDto>("/users", dto),
-  update: (id: string, dto: Partial<CreateUserDto>) =>
-    service.patch<User, Partial<CreateUserDto>>(`/users/${id}`, dto),
-  remove: (id: string) => service.delete<void>(`/users/${id}`),
-};
-```
-
-### Step 10: Configure ESLint
+### Step 12: Configure ESLint
 
 Create `.eslintrc.cjs`:
 
@@ -425,7 +525,9 @@ module.exports = {
 };
 ```
 
-### Step 11: Configure Prettier
+---
+
+### Step 13: Configure Prettier
 
 Create `.prettierrc`:
 
@@ -439,7 +541,9 @@ Create `.prettierrc`:
 }
 ```
 
-### Step 12: Configure Jest
+---
+
+### Step 14: Configure Jest
 
 Create `jest.config.ts`:
 
@@ -454,11 +558,13 @@ export default {
 };
 ```
 
-### Step 13: Setup Husky + lint-staged
+---
+
+### Step 15: Setup Husky + lint-staged
 
 ```bash
-npx husky install
-npx husky add .husky/pre-commit "npx lint-staged"
+yarn husky install
+yarn husky add .husky/pre-commit "yarn lint-staged"
 ```
 
 Update `package.json`:
@@ -482,7 +588,9 @@ Update `package.json`:
 }
 ```
 
-### Step 14: Setup environment files
+---
+
+### Step 16: Setup environment files
 
 Create `.env.example`:
 
@@ -503,30 +611,34 @@ Update `.gitignore`:
 .env.*.local
 ```
 
-### Step 15: Validate setup
+---
+
+### Step 17: Validate setup
 
 ```bash
-npm run lint
-npm run format
-npm run test
-npm run build
+yarn lint
+yarn format
+yarn test
+yarn build
 ```
 
 ## Troubleshooting
 
-| Issue                          | Solution                                                               |
-| ------------------------------ | ---------------------------------------------------------------------- |
-| Path alias `src/` not resolved | Check both `vite.config.ts` and `tsconfig.json` paths                  |
-| Husky hook not running         | Run `npm run prepare` to re-initialize husky                           |
-| ESLint & Prettier conflict     | Ensure `eslint-config-prettier` is last in `extends`                   |
-| Jest can't resolve path alias  | Add `moduleNameMapper` in `jest.config.ts`                             |
-| `any` type error from ESLint   | Use proper TypeScript types — never use `any`                          |
-| Vite env variable undefined    | Prefix all env vars with `VITE_`                                       |
-| CORS error in browser          | Configure CORS on server — never add CORS headers on client            |
-| Token not attached to request  | Check `setupRequestInterceptor` reads correct storage key              |
-| 401 redirect loop              | Ensure `/login` route does not call protected API                      |
-| Refresh token fails silently   | Check `failedRequestQueue` is cleared in both success and catch        |
-| Multiple instances conflict    | `isRefreshing` is instance-level — each `new ApiService()` is isolated |
+| Issue                                | Solution                                                        |
+| ------------------------------------ | --------------------------------------------------------------- |
+| `node -v` < 18 + NVM available       | `nvm install 18 && nvm use 18`                                  |
+| `node -v` < 18 + no NVM              | Install Node 18 via Homebrew / apt / winget theo OS             |
+| `yarn` command not found             | `npm install -g yarn` rồi verify `yarn -v`                      |
+| `.github/` bị mất sau scaffold       | Dùng `yarn create vite .` thay vì `yarn create vite <name>`     |
+| Vite hỏi "overwrite existing files?" | Chọn `ignore` — chỉ overwrite Vite files, không động `.github/` |
+| Path alias `src/` not resolved       | Check cả `vite.config.ts` và `tsconfig.json`                    |
+| Husky hook not running               | `yarn prepare` để re-initialize                                 |
+| ESLint & Prettier conflict           | Đảm bảo `eslint-config-prettier` là cuối cùng trong `extends`   |
+| Jest can't resolve path alias        | Thêm `moduleNameMapper` trong `jest.config.ts`                  |
+| `any` type error                     | Dùng proper TypeScript types — không dùng `any`                 |
+| Vite env variable undefined          | Prefix tất cả env vars với `VITE_`                              |
+| Token not attached to request        | Check `setupRequestInterceptor` đọc đúng storage key            |
+| 401 redirect loop                    | Đảm bảo `/login` không gọi protected API                        |
 
 ## References
 
@@ -535,4 +647,5 @@ npm run build
 - [copilot-instructions.md](../../copilot-instructions.md)
 - [Vite docs](https://vitejs.dev/guide/)
 - [Axios interceptors docs](https://axios-http.com/docs/interceptors)
+- [NVM docs](https://github.com/nvm-sh/nvm)
 - [Agent Skills Spec](https://agentskills.io/specification)
